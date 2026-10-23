@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سحر جاما: صمّم عرضك التقديمي بالذكاء الاصطناعي</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    background: #eef1f9;
+    color: #1f2937;
+    display: flex;
+    justify-content: center;
+  }
+  .app {
+    width: 100%;
+    max-width: 720px;
+    height: 100vh;
+    height: 100dvh;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 30px rgba(0,0,0,.08);
+  }
+  header {
+    background: linear-gradient(135deg, #6d28d9, #2563eb);
+    color: #fff;
+    padding: 14px 18px;
+  }
+  header h1 { margin: 0; font-size: 19px; line-height: 1.5; }
+  header p { margin: 2px 0 0; font-size: 13px; opacity: .9; }
+
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f8f9fd;
+  }
+  .msg {
+    max-width: 94%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    line-height: 1.9;
+    font-size: 16px;
+  }
+  .bot  { background: #fff; border: 1px solid #e5e7eb; align-self: flex-start; border-top-right-radius: 4px; }
+  .user { background: #6d28d9; color: #fff; align-self: flex-end; border-top-left-radius: 4px; }
+
+  .msg .h {
+    font-weight: bold;
+    color: #5b21b6;
+    margin: 6px 0 4px;
+    font-size: 16.5px;
+  }
+  .msg p { margin: 4px 0; }
+  .msg ul, .msg ol { margin: 4px 0; padding-right: 22px; padding-left: 0; }
+  .msg li { margin: 4px 0; }
+  .msg li ul { list-style: circle; margin: 2px 0; }
+  .msg li strong { color: #1d4ed8; }
+  .msg img { max-width: 100%; border-radius: 10px; margin: 8px 0; border: 1px solid #e5e7eb; }
+  .msg a { color: #1d4ed8; font-weight: bold; }
+
+  .video-box { margin: 10px 0 4px; }
+  .video-title { font-size: 14px; color: #6b7280; margin-bottom: 4px; }
+  .video-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .video-open { display: inline-block; margin-top: 4px; font-size: 14px; }
+
+  #panel {
+    border-top: 1px solid #e5e7eb;
+    padding: 10px 14px 12px;
+    background: #fff;
+    max-height: 46vh;
+    overflow-y: auto;
+  }
+  #panelTitle { font-size: 14px; color: #6b7280; margin: 0 0 8px; }
+  .btn {
+    display: block;
+    width: 100%;
+    text-align: right;
+    margin-bottom: 8px;
+    padding: 12px 14px;
+    font-size: 16px;
+    font-family: inherit;
+    background: #f5f3ff;
+    color: #5b21b6;
+    border: 1.5px solid #ddd6fe;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .btn:hover, .btn:active { background: #ede9fe; }
+  .btn.q { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .btn.q:hover, .btn.q:active { background: #dbeafe; }
+  .tools { display: flex; gap: 14px; margin-top: 2px; }
+  .link-btn {
+    background: none; border: none; padding: 4px 0;
+    color: #6b7280; font-family: inherit; font-size: 14px;
+    text-decoration: underline; cursor: pointer;
+  }
+
+  #gate {
+    position: fixed; inset: 0;
+    background: rgba(31, 41, 55, .88);
+    display: none; align-items: center; justify-content: center;
+    padding: 20px; z-index: 10;
+  }
+  #gate .box {
+    background: #fff; border-radius: 16px; padding: 26px 22px;
+    width: 100%; max-width: 380px; text-align: center;
+  }
+  #gate h2 { margin: 0 0 6px; font-size: 21px; color: #5b21b6; }
+  #gate .sub { margin: 0 0 14px; color: #6b7280; font-size: 14px; }
+  #gate .ask { margin: 0 0 12px; font-size: 18px; font-weight: bold; }
+  #gate input {
+    width: 100%; padding: 12px; font-size: 17px; font-family: inherit;
+    border: 1.5px solid #ddd6fe; border-radius: 10px; text-align: center; margin-bottom: 10px;
+  }
+  #gate .err { color: #dc2626; font-size: 14px; min-height: 20px; margin-bottom: 8px; }
+  #gate button {
+    width: 100%; padding: 12px; font-size: 17px; font-family: inherit;
+    background: #6d28d9; color: #fff; border: none; border-radius: 10px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <h2>✨ أهلًا بك</h2>
+    <p class="sub" id="gateTitle"></p>
+    <p class="ask">اكتب اسمك ثلاثي علشان تبدأ</p>
+    <input id="nameInput" type="text" maxlength="80" placeholder="الاسم الثلاثي" autocomplete="name">
+    <div class="err" id="nameErr"></div>
+    <button id="nameBtn">ابدأ</button>
+  </div>
+</div>
+
+<div class="app">
+  <header>
+    <h1 id="title"></h1>
+    <p>اختر القسم، ثم اختر السؤال، وهتظهر لك الإجابة والشرح بالفيديو 🎬</p>
+  </header>
+  <div id="chat"></div>
+  <div id="panel">
+    <p id="panelTitle"></p>
+    <div id="buttons"></div>
+    <div class="tools">
+      <button class="link-btn" id="backBtn" style="display:none">⬅ الرجوع للأقسام</button>
+      <button class="link-btn" id="resetBtn">مسح المحادثة</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   الإعدادات
+   ============================================================ */
+const TITLE = "✨ سحر جاما: صمّم عرضك التقديمي بالذكاء الاصطناعي في دقايق";
+
+// طلب الاسم الثلاثي قبل البدء (true = مطلوب)
+const ASK_NAME = true;
+
+// رابط Google Apps Script لتسجيل الأسماء في الشيت
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzy70-4W91dYbi2r9ocl9-gEma43GzuBJUeoFA7eArCQuoV35tpcaihtmFbXSvYfYol/exec";
+
+const WELCOME = "هنتعلم سوا ازاي تصمم عرض تقديمي احترافي باستخدام منصة جاما (Gamma) 🎨\nاختر القسم اللي عايز تبدأ منه 👇";
+
+/* ============================================================
+   المحتوى التعليمي
+   كل إجابة = مجموعة كتل (blocks). أنواع الكتل:
+   { h: "عنوان" }
+   { p: "فقرة" }
+   { list: [ "نقطة" , { t: "نقطة رئيسية", sub: ["نقطة فرعية"] } ], ordered: true/false }
+   { video: "كود أو رابط يوتيوب", title: "عنوان الفيديو" }
+   { img: "images/اسم-الصورة.png" }
+   { link: "https://...", t: "نص الرابط" }
+   ============================================================ */
+const SECTIONS = [
+
+  /* ---------- القسم 1 ---------- */
+  { icon: "💡", title: "تعرّف على منصة جاما", questions: [
+
+    { q: "ما هي منصة جاما (Gamma)؟", a: [
+      { p: "جاما منصة سحابية تعمل بتقنيات الذكاء الاصطناعي التوليدي (Generative AI)، مخصصة لتصميم وإنشاء العروض التقديمية الرقمية التفاعلية." },
+      { list: [
+        { t: "كيف تعمل؟", sub: [
+          "تعمل عبر المتصفح، وتنشئ عرضًا تقديميًا كاملًا من موضوع أو نص مكتوب.",
+          "تكتب المحتوى وتختار التصميم والصور داخل المنصة نفسها.",
+          "تعتمد على تقنيات معالجة اللغة الطبيعية (NLP) لتحويل النصوص والأفكار إلى شرائح وبطاقات بصرية منسقة." ] },
+        { t: "ما الفائدة التعليمية؟", sub: [
+          "تقلل الجهد المبذول في التنسيق اليدوي، فتركّز على جودة المحتوى وإتقان مهارات العرض والإلقاء.",
+          "مناسبة لطلاب كلية التربية في إعداد الأنشطة التعليمية والتقارير والتدريس المصغر." ] }
+      ] },
+      { link: "https://gamma.app", t: "فتح موقع جاما في صفحة جديدة" }
+    ] },
+
+    { q: "ما هي مميزات جاما؟", a: [
+      { h: "10 مميزات تجعل جاما مناسبة لك:" },
+      { list: [
+        { t: "1) السرعة وتوفير الوقت والجهد", sub: ["تحوّل المنصة الموضوع المكتوب إلى عرض كامل في ثوانٍ، فتتفرغ لمراجعة المحتوى بدل قضاء ساعات في التنسيق."] },
+        { t: "2) التكامل داخل منصة واحدة", sub: ["تتولى المنصة كتابة المحتوى واختيار التصميم والصور معًا، فلا تحتاج للانتقال بين عدة برامج."] },
+        { t: "3) التخطيط المسبق للعرض", sub: ["تعرض المنصة قبل التوليد مخططًا بعناوين الشرائح يمكنك تعديله وإعادة ترتيبه، وهذا يدرّبك على تنظيم الأفكار وتسلسل المحتوى."] },
+        { t: "4) سهولة الاستخدام", sub: ["واجهة بسيطة لا تحتاج خبرة سابقة في التصميم، ويمكن البدء بإنشاء حساب باستخدام بريد Gmail."] },
+        { t: "5) التصميم الاحترافي المتناسق", sub: ["توفر قوالب وتخطيطات ذكية تتكيف مع محتوى كل شريحة، فيظهر العرض متناسقًا في الألوان والخطوط."] },
+        { t: "6) تنوع مصادر الإنشاء", sub: [
+          "من موضوع (Generate).",
+          "من نص جاهز (Paste in text).",
+          "من ملف مستورد (Import)." ] },
+        { t: "7) تنوع عناصر الوسائط المتعددة", sub: ["تتيح إدراج الصور والجداول والفيديو، وتولّد الصور بالذكاء الاصطناعي أو تبحث عنها، وهذا يراعي اختلاف أساليب التعلم."] },
+        { t: "8) سهولة التعديل والتحسين", sub: [
+          "تعدّل النص والصور والتخطيط يدويًا.",
+          "أو تطلب من الذكاء الاصطناعي تلخيص النص وتبسيطه وتحسين صياغته." ] },
+        { t: "9) دعم اللغة العربية", sub: ["يمكن إنشاء العروض باللغة العربية مع الكتابة من اليمين إلى اليسار."] },
+        { t: "10) سهولة المشاركة والتصدير", sub: [
+          "تشارك العرض برابط يفتحه زملاء الدراسة والمعلم.",
+          "وتصدّره بصيغ PDF و PowerPoint و Google Slides." ] }
+      ] }
+    ] },
+
+    { q: "ما هي الخطة المجانية وكم نقطة أحصل عليها؟", a: [
+      { list: [
+        { t: "الدخول إلى المنصة", sub: ["يمكنك استخدام حساب Gmail الخاص بك للدخول."] },
+        { t: "الخطة المجانية", sub: [
+          "تمنحك نحو 400 نقطة (Credits) لمرة واحدة، تكفي لإنشاء نحو 10 عروض.",
+          "لا تحتاج إلى إدخال أي بيانات دفع.",
+          "يظهر شعار Made with Gamma على الروابط المشاركة في النسخة المجانية." ] }
+      ] },
+      { h: "كم تستهلك كل عملية؟" },
+      { list: [
+        "توليد العرض كاملًا (Generate): نحو 40 نقطة.",
+        "توليد صورة بالذكاء الاصطناعي: نحو 10 نقاط.",
+        "تعديل شريحة بالذكاء الاصطناعي (Edit with AI): نحو 10 نقاط لكل طلب.",
+        "تعديل المخطط (Outline) والتعديل اليدوي للنص: مجاني بدون نقاط."
+      ] }
+    ] }
+  ] },
+
+  /* ---------- القسم 2 ---------- */
+  { icon: "👤", title: "الخطوة 1: إنشاء حساب مجاني", questions: [
+
+    { q: "كيف أنشئ حسابًا مجانيًا على جاما؟", a: [
+      { p: "الهدف: أن تنشئ حسابًا مجانيًا على المنصة." },
+      { list: [
+        { t: "1) ادخل إلى الموقع الرسمي للمنصة", sub: [
+          "افتح متصفح Chrome، واكتب عنوان المنصة في شريط العنوان ثم اضغط Enter.",
+          "تظهر الصفحة الرئيسية للمنصة وبها زر Free for start." ] },
+        { t: "2) اختر طريقة التسجيل", sub: [
+          "اضغط على زر Start for free فتظهر نافذة اختيار طريقة التسجيل.",
+          "اختر Continue with Google للتسجيل بحساب Gmail، أو اكتب بريدك الإلكتروني وكلمة المرور.",
+          "بعد اختيار حساب Gmail الخاص بك، اضغط على اسم الحساب لتأكيد الدخول." ] },
+        { t: "3) أكمل بياناتك وابدأ الاستخدام", sub: [
+          "إذا طُلب منك ذلك، اكتب اسمك واختر نوع استخدامك للمنصة (مثل: التعليم).",
+          "عند الانتهاء تظهر الصفحة الرئيسية لحسابك، وتبدأ الخطة المجانية تلقائيًا بـ 400 نقطة دون إدخال أي بيانات دفع." ] }
+      ], ordered: false },
+      { video: "kDtWylNBthY", title: "🎬 فيديو: خطوات إنشاء حساب مجاني على جاما" }
+    ] }
+  ] },
+
+  /* ---------- القسم 3 ---------- */
+  { icon: "🤖", title: "الخطوة 2: إنشاء العرض بالذكاء الاصطناعي", questions: [
+
+    { q: "كيف أنشئ عرضًا من موضوع محدد (Generate)؟", a: [
+      { p: "الهدف: أن تولّد عرضًا تقديميًا من موضوع محدد بالضغط على Generate." },
+      { list: [
+        { t: "1) أنشئ عرضًا تقديميًا جديدًا", sub: [
+          "من الصفحة الرئيسية اضغط على زر New (أو + Create).",
+          "ثم اختر Presentation من القائمة التي تظهر." ] },
+        { t: "2) اكتب الموضوع في مربع الكتابة", sub: [
+          "اضغط داخل مربع الكتابة واكتب موضوع العرض بوضوح، مع ذكر الفئة المستهدفة.",
+          "مثال: «دورة حياة الفراشة لتلاميذ الصف الرابع الابتدائي».",
+          "ثم اضغط على Generate outline ليكتب الذكاء الاصطناعي مخططًا بعناوين الشرائح." ] },
+        { t: "3) اختر القالب", sub: [
+          "اضغط على القالب المناسب لتجربته، ويفضّل اختيار قالب بخلفية فاتحة." ] }
+      ] },
+      { video: "aXd7FXx3wbo", title: "🎬 فيديو: إنشاء عرض تقديمي من خلال كتابة الموضوع" }
+    ] },
+
+    { q: "كيف أنشئ عرضًا من ملف أرفعه (Upload)؟", a: [
+      { p: "الهدف: أن تحوّل ملفًا موجودًا عندك إلى عرض تقديمي." },
+      { list: [
+        { t: "1) ارفع الملف", sub: [
+          "اضغط على علامة + ومنها اختر Upload files.",
+          "اختر الملف المطلوب من جهاز الكمبيوتر أو الموبايل الخاص بك.",
+          "ثم اضغط على Generate outline ليقوم الذكاء الاصطناعي بتحويل الملف إلى مخطط بعناوين الشرائح." ] },
+        { t: "2) اختر القالب", sub: [
+          "اضغط على القالب المناسب لتجربته، ويفضّل اختيار قالب بخلفية فاتحة." ] }
+      ] },
+      { video: "VkvFC4tFGI4", title: "🎬 فيديو: إنشاء عرض تقديمي من خلال رفع ملف من جهاز الكمبيوتر" }
+    ] },
+
+    { q: "كيف أراجع مخطط العرض وأولّد العرض؟", a: [
+      { list: [
+        { t: "1) راجع مخطط العرض (Outline)", sub: [
+          "تظهر عناوين الشرائح في صورة مخطط.",
+          "اضغط على أي عنوان لتعديله.",
+          "اضغط على علامة + لإضافة عنوان جديد.",
+          "اسحب العنوان بالماوس لتغيير ترتيب الشرائح.",
+          "تعديل المخطط هنا مجاني، ويوفّر عليك النقاط قبل التوليد." ] },
+        { t: "2) ولّد العرض", sub: [
+          "اضغط على زر Generate.",
+          "بعد عدة ثوانٍ يظهر العرض كاملًا، ويُخصم نحو 40 نقطة من رصيدك." ] },
+        { t: "3) شاهد العرض الناتج", sub: [
+          "يظهر العرض في شكل بطاقات (Cards) بنص وتصميم وصور لكل شريحة.",
+          "تنقّل بين الشرائح من الشريط الجانبي لتتعرف على ما أنتجته المنصة قبل البدء في التعديل." ] }
+      ] },
+      { video: "hTN_SXA6bzo", title: "🎬 فيديو: مراجعة مخطط العرض وتوليد العرض" }
+    ] }
+  ] },
+
+  /* ---------- القسم 4 ---------- */
+  { icon: "✏️", title: "الخطوة 3: تعديل العرض التقديمي", questions: [
+
+    { q: "كيف أغيّر اسم العرض وأعدّل النص؟", a: [
+      { p: "الهدف: أن تعدّل النص والصور والتخطيط داخل الشرائح، وتحلل العرض الناتج وتصحح أخطاءه." },
+      { list: [
+        { t: "1) تغيير اسم العرض", sub: [
+          "اضغط مرة واحدة على عنوان العرض أعلى الصفحة، واكتب الاسم الجديد (مثل: عرض تقديمي رقم 1)." ] },
+        { t: "2) تعديل النص داخل الشريحة (كتابة وتنسيق)", sub: [
+          "اضغط على النص المراد تعديله داخل الشريحة ليظهر مؤشر الكتابة، ثم اكتب النص الجديد أو صحّح الكلمات بلوحة المفاتيح.",
+          "التعديل اليدوي لا يستهلك نقاطًا.",
+          "حدّد النص فيظهر شريط أدوات فوقه: اضغط على الرقم المكتوب عند حجم الخط لاختيار الحجم المناسب.",
+          "واضغط على اسم الخط (Font) لاختيار نوع الخط المناسب." ] }
+      ] },
+      { video: "GrMaTHIMy9w", title: "🎬 فيديو: تغيير اسم العرض وتعديل النص داخل الشريحة" }
+    ] },
+
+    { q: "كيف أضيف شريحة جديدة؟", a: [
+      { list: [
+        "اضغط على علامة + الظاهرة أسفل الشريحة أو بين شريحتين.",
+        "اختر Blank card لشريحة فارغة، أو اختر تصميمًا جاهزًا من القوالب."
+      ] },
+      { video: "4ouv2-xwee0", title: "🎬 فيديو: إضافة شريحة جديدة إلى العرض التقديمي" }
+    ] },
+
+    { q: "كيف أغيّر تخطيط الشريحة (Layout)؟", a: [
+      { list: [
+        "حدّد الشريحة، ثم اضغط على أيقونة Layout في شريط الأدوات (أيقونة أو قائمة بأيقونات).",
+        "اختر التخطيط المناسب، مثل: أعمدة أو مخطط زمني."
+      ] },
+      { video: "OC5ef9KR6lU", title: "🎬 فيديو: تغيير تخطيط الشريحة (Layout)" }
+    ] },
+
+    { q: "كيف أغيّر صورة أو أدرج صورة جديدة؟", a: [
+      { list: [
+        { t: "تغيير صورة داخل الشريحة", sub: [
+          "اضغط على الصورة لتحديدها، ثم اضغط على Replace image.",
+          "اختر Web search للبحث عن صورة من الإنترنت.",
+          "أو اختر Upload لرفع صورة من جهازك.",
+          "أو اختر Generate AI image لتوليد صورة بالذكاء الاصطناعي (تستهلك نحو 10 نقاط)." ] },
+        { t: "إدراج صورة من جهاز الحاسوب", sub: [
+          "اضغط على علامة + داخل الشريحة واختر Image.",
+          "ثم اختر Upload، ومن نافذة الملفات اختر الصورة المناسبة واضغط Open.",
+          "تتحكم في حجم الصورة من النقاط الظاهرة على حوافها." ] }
+      ] },
+      { video: "ECsNyuwjHMU", title: "🎬 فيديو: تغيير الصورة في الشريحة أو إدراج صورة جديدة" }
+    ] },
+
+    { q: "كيف أدرج جدولًا داخل الشريحة؟", a: [
+      { list: [
+        "اضغط على علامة + (Add blocks) ومنها اختر Table.",
+        "اختر حجم الجدول، وليكن 3 أعمدة و3 صفوف.",
+        "اضغط داخل الخلية واكتب النص المطلوب."
+      ] },
+      { video: "aoE9TjfyaR4", title: "🎬 فيديو: إدراج جدول داخل الشريحة" }
+    ] },
+
+    { q: "كيف أدرج فيديو من يوتيوب؟", a: [
+      { list: [
+        "اضغط على علامة + (Add blocks) ومنها اختر Video.",
+        "اختر YouTube، ثم الصق رابط الفيديو أو ابحث عنه.",
+        "اضغط Insert ليظهر الفيديو داخل الشريحة."
+      ] },
+      { video: "i2b2hHk0mqM", title: "🎬 فيديو: إدراج فيديو من يوتيوب داخل الشريحة" }
+    ] },
+
+    { q: "كيف أعدّل الشريحة بالذكاء الاصطناعي؟", a: [
+      { list: [
+        "اضغط على أيقونة Edit with AI داخل الشريحة.",
+        "اكتب طلبًا بسيطًا، مثل: «اختصر النص».",
+        "اضغط إرسال وراجع الاقتراح الذي يظهر.",
+        "اضغط Accept لقبوله، أو Discard لإلغائه.",
+        { t: "تنبيه", sub: ["كل طلب يستهلك نحو 10 نقاط، فاستخدمه عند الحاجة فقط."] }
+      ] }
+    ] }
+  ] },
+
+  /* ---------- القسم 5 ---------- */
+  { icon: "📤", title: "الخطوة 4: مشاهدة العرض ومشاركته وتصديره", questions: [
+
+    { q: "كيف أشاهد العرض النهائي (Present)؟", a: [
+      { p: "الهدف: أن تصدّر العرض أو تشاركه برابط، وأن تقيّم جودته قبل تسليمه." },
+      { list: [
+        "اضغط على زر Present لتشغيل العرض بملء الشاشة.",
+        "تنقّل بين الشرائح بالأسهم.",
+        "اخرج من العرض بالضغط على مفتاح Esc."
+      ] },
+      { video: "jijwLJBRNx0", title: "🎬 فيديو: مشاهدة العرض النهائي" }
+    ] },
+
+    { q: "كيف أشارك العرض برابط؟", a: [
+      { list: [
+        "اضغط على Share.",
+        "اختر Anyone with the link، ثم اجعل الصلاحية View (مشاهدة).",
+        "اضغط Copy link وأرسل الرابط للآخرين.",
+        { t: "ملاحظة", sub: ["تظهر علامة Made with Gamma في الرابط المشارك في النسخة المجانية."] }
+      ] },
+      { video: "LwkQO26B4BU", title: "🎬 فيديو: مشاركة العرض مع الآخرين" }
+    ] },
+
+    { q: "كيف أصدّر العرض كملف PDF؟", a: [
+      { list: [
+        "اضغط على قائمة الثلاث نقاط (⋯) ثم Export.",
+        "اختر Export to PDF ثم اضغط Download وانتظر التجهيز.",
+        "يُحفظ الملف في مجلد التنزيلات (Downloads) بجهازك."
+      ] },
+      { video: "aZJE3-spJsg", title: "🎬 فيديو: تصدير العرض كملف PDF" }
+    ] },
+
+    { q: "كيف أصدّر العرض كملف PowerPoint؟", a: [
+      { list: [
+        "من قائمة Export اختر Export to PowerPoint.",
+        "ثم اضغط Download."
+      ] },
+      { video: "QyZhISeCqFE", title: "🎬 فيديو: تصدير العرض كملف PowerPoint" }
+    ] },
+
+    { q: "كيف أفتح العرض في Google Slides؟", a: [
+      { list: [
+        "من قائمة Export اختر Export to Google Slides.",
+        "إن ظهر الخيار، اسمح بربط حسابك بالمنصة.",
+        "سيُفتح العرض داخل Google Slides للتعديل."
+      ] },
+      { video: "OMXEGH0Fvus", title: "🎬 فيديو: فتح العرض في Google Slides" }
+    ] }
+  ] }
+];
+
+/* ============================================================
+   من هنا لتحت لا تغيّري شيئًا
+   ============================================================ */
+const chat = document.getElementById("chat");
+const buttons = document.getElementById("buttons");
+const panelTitle = document.getElementById("panelTitle");
+const backBtn = document.getElementById("backBtn");
+let studentName = "";
+
+document.getElementById("title").textContent = TITLE;
+document.title = TITLE;
+document.getElementById("gateTitle").textContent = TITLE;
+
+function scrollDown() { chat.scrollTop = chat.scrollHeight; }
+
+function ytId(v) {
+  const m = String(v).match(/(?:v=|youtu\.be\/|embed\/|shorts\/)?([\w-]{11})(?:[?&].*)?$/);
+  return m ? m[1] : v;
+}
+
+function renderList(items, ordered) {
+  const list = document.createElement(ordered ? "ol" : "ul");
+  items.forEach(function (it) {
+    const li = document.createElement("li");
+    if (typeof it === "string") {
+      li.textContent = it;
+    } else {
+      const b = document.createElement("strong");
+      b.textContent = it.t;
+      li.appendChild(b);
+      if (it.sub) li.appendChild(renderList(it.sub, false));
+    }
+    list.appendChild(li);
+  });
+  return list;
+}
+
+function renderBlock(block, parent) {
+  if (block.h) {
+    const d = document.createElement("div"); d.className = "h"; d.textContent = block.h; parent.appendChild(d);
+  }
+  if (block.p) {
+    const p = document.createElement("p"); p.textContent = block.p; parent.appendChild(p);
+  }
+  if (block.list) parent.appendChild(renderList(block.list, block.ordered));
+  if (block.img) {
+    const im = document.createElement("img"); im.src = block.img; im.alt = block.alt || ""; im.loading = "lazy"; parent.appendChild(im);
+  }
+  if (block.link) {
+    const a = document.createElement("a");
+    a.href = block.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+    a.textContent = "🔗 " + (block.t || block.link);
+    const p = document.createElement("p"); p.appendChild(a); parent.appendChild(p);
+  }
+  if (block.video) {
+    const id = ytId(block.video);
+    const box = document.createElement("div"); box.className = "video-box";
+    if (block.title) {
+      const t = document.createElement("div"); t.className = "video-title"; t.textContent = block.title; box.appendChild(t);
+    }
+    const wrap = document.createElement("div"); wrap.className = "video-wrap";
+    const f = document.createElement("iframe");
+    f.src = "https://www.youtube-nocookie.com/embed/" + id;
+    f.title = block.title || "فيديو";
+    f.allowFullscreen = true;
+    f.setAttribute("allow", "accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen");
+    f.setAttribute("loading", "lazy");
+    wrap.appendChild(f); box.appendChild(wrap);
+    const open = document.createElement("a");
+    open.className = "video-open"; open.href = "https://www.youtube.com/watch?v=" + id;
+    open.target = "_blank"; open.rel = "noopener noreferrer";
+    open.textContent = "فتح الفيديو في صفحة جديدة";
+    box.appendChild(open);
+    parent.appendChild(box);
+  }
+}
+
+function addMessage(content, who) {
+  const div = document.createElement("div");
+  div.className = "msg " + who;
+  if (typeof content === "string") {
+    div.textContent = content;
+    div.style.whiteSpace = "pre-wrap";
+  } else {
+    content.forEach(function (b) { renderBlock(b, div); });
+  }
+  chat.appendChild(div);
+  scrollDown();
+  return div;
+}
+
+function clearButtons() { buttons.innerHTML = ""; }
+
+function showSections() {
+  clearButtons();
+  panelTitle.textContent = "اختر القسم:";
+  backBtn.style.display = "none";
+  SECTIONS.forEach(function (s) {
+    const b = document.createElement("button");
+    b.className = "btn";
+    b.textContent = s.icon + "  " + s.title;
+    b.onclick = function () {
+      addMessage(s.icon + " " + s.title, "user");
+      setTimeout(function () {
+        addMessage("تمام! اختر السؤال اللي عايز تعرف إجابته 👇", "bot");
+        showQuestions(s);
+      }, 250);
+    };
+    buttons.appendChild(b);
+  });
+  panel_scroll();
+}
+
+function showQuestions(section) {
+  clearButtons();
+  panelTitle.textContent = section.icon + " " + section.title;
+  backBtn.style.display = "inline";
+  section.questions.forEach(function (item) {
+    const b = document.createElement("button");
+    b.className = "btn q";
+    b.textContent = item.q;
+    b.onclick = function () {
+      addMessage(item.q, "user");
+      setTimeout(function () { addMessage(item.a, "bot"); }, 300);
+    };
+    buttons.appendChild(b);
+  });
+  panel_scroll();
+}
+
+function panel_scroll() { document.getElementById("panel").scrollTop = 0; }
+
+function showWelcome() {
+  chat.innerHTML = "";
+  addMessage((studentName ? "أهلًا يا " + studentName + " 👋\n" : "أهلًا بك 👋\n") + WELCOME, "bot");
+  showSections();
+}
+
+function sendName(name) {
+  if (!SCRIPT_URL) return;
+  try {
+    fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", body: new URLSearchParams({ name: name }) });
+  } catch (e) {}
+}
+
+function startApp() {
+  if (!ASK_NAME) { showWelcome(); return; }
+  let saved = "";
+  try { saved = localStorage.getItem("studentName") || ""; } catch (e) {}
+  if (saved) { studentName = saved; showWelcome(); return; }
+
+  const gate = document.getElementById("gate");
+  const input = document.getElementById("nameInput");
+  const err = document.getElementById("nameErr");
+  gate.style.display = "flex";
+
+  function submit() {
+    const n = input.value.trim().replace(/\s+/g, " ");
+    if (n.split(" ").length < 3) { err.textContent = "من فضلك اكتب الاسم الثلاثي (ثلاث كلمات)"; return; }
+    studentName = n;
+    try { localStorage.setItem("studentName", n); } catch (e) {}
+    sendName(n);
+    gate.style.display = "none";
+    showWelcome();
+  }
+  document.getElementById("nameBtn").onclick = submit;
+  input.onkeydown = function (ev) { if (ev.key === "Enter") submit(); };
+  input.focus();
+}
+
+backBtn.onclick = function () { showSections(); };
+document.getElementById("resetBtn").onclick = showWelcome;
+startApp();
+</script>
+</body>
+</html>
